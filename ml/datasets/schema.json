@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ManasShaktiiDatasetEntry",
+  "type": "object",
+  "properties": {
+    "instruction": { "type": "string" },
+    "input_features": {
+      "type": "object",
+      "properties": {
+        "event": { "type": "string" },
+        "motion_power": { "type": "number" },
+        "duration": { "type": "number" }
+      },
+      "required": ["event", "motion_power", "duration"]
+    },
+    "output_action": {
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" },
+        "action": {
+          "type": "string",
+          "enum": [
+            "SHOW_OVERLAY",
+            "HIDE_OVERLAY",
+            "SHOW_BREATH_GATE",
+            "VIBRATE",
+            "SHOW_NOTIFICATION",
+            "OPEN_JOURNAL",
+            "START_BREATHING_EXERCISE"
+          ]
+        },
+        "parameters": { "type": "object" }
+      },
+      "required": ["message", "action", "parameters"]
+    }
+  },
+  "required": ["instruction", "input_features", "output_action"]
+}

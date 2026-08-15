@@ -1,0 +1,38 @@
+# Node & React Native
+node_modules/
+.bundle/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Android / Gradle
+.gradle/
+build/
+android/app/build/
+android/.gradle/
+android/app/.cxx/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
+# iOS / Xcode
+Pods/
+DerivedData/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Large Model Weights & Data (> 100MB)
+*.bin
+*.task
+*.onnx
+*.tflite
+*.gguf
+
+# Temporary files
+*.tmp
