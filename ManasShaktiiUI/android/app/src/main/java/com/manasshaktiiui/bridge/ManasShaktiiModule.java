@@ -14,6 +14,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.manasshaktiiui.sensors.WatchmanService;
+import com.manasshaktiiui.ai.LocalModelRuntime;
 import com.manasshaktiiui.ai.ManasShaktiiAgent;
 import com.manasshaktiiui.sensors.BehavioralEvent;
 
@@ -71,7 +72,16 @@ public class ManasShaktiiModule extends ReactContextBaseJavaModule {
         WritableMap map = Arguments.createMap();
         map.putBoolean("isMonitoringActive", WatchmanService.isRunning());
         map.putBoolean("isOfflineMode", true);
-        map.putString("localRuntime", "MediaPipe/Gemma 2B INT4");
+
+        LocalModelRuntime runtime = ManasShaktiiAgent.getInstance(getReactApplicationContext()).getModelRuntime();
+        if (runtime != null) {
+            map.putString("localRuntime", runtime.getRuntimeName());
+            map.putString("runtimeStatus", runtime.getRuntimeStatus());
+        } else {
+            map.putString("localRuntime", "None");
+            map.putString("runtimeStatus", "Uninitialized");
+        }
+
         promise.resolve(map);
     }
 
@@ -107,6 +117,17 @@ public class ManasShaktiiModule extends ReactContextBaseJavaModule {
 
             reactContextRef.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                     .emit("onBehavioralEvent", params);
+        }
+    }
+
+    public static void sendModelStatusToJs(String runtimeName, String status) {
+        if (reactContextRef != null && reactContextRef.hasActiveCatalystInstance()) {
+            WritableMap params = Arguments.createMap();
+            params.putString("runtimeName", runtimeName);
+            params.putString("status", status);
+
+            reactContextRef.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("modelStatusChanged", params);
         }
     }
 }

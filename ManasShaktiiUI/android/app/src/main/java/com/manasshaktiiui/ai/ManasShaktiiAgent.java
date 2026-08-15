@@ -6,14 +6,15 @@ import android.os.HandlerThread;
 import android.util.Log;
 
 import com.manasshaktiiui.actions.ActionHandler;
+import com.manasshaktiiui.bridge.ManasShaktiiModule;
 import com.manasshaktiiui.sensors.BehavioralEvent;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Core Local AI Agent coordinator.
- * Coordinates feature event processing, prompt generation, local runtime model inference,
- * output parsing, safety validation, and OS action dispatch.
+ * Core Model-Agnostic Local AI Agent Coordinator.
+ * Interacts with local AI engines EXCLUSIVELY through the LocalModelRuntime interface.
+ * Has zero direct dependencies on MediaPipe, LiteRT, ONNX, or any specific LLM library.
  */
 public class ManasShaktiiAgent {
 
@@ -31,13 +32,13 @@ public class ManasShaktiiAgent {
 
     private ManasShaktiiAgent(Context context) {
         this.context = context.getApplicationContext();
-        // Default runtime set to MediaPipeModelRuntime; replaceable with any LocalModelRuntime implementation
-        this.modelRuntime = new MediaPipeModelRuntime();
 
         agentWorkerThread = new HandlerThread("ManasAgentWorker");
         agentWorkerThread.start();
         agentHandler = new Handler(agentWorkerThread.getLooper());
 
+        // Attempt MediaPipe runtime by default; automatically falls back if weights missing
+        this.modelRuntime = new MediaPipeModelRuntime();
         initializeRuntime();
     }
 
@@ -46,6 +47,10 @@ public class ManasShaktiiAgent {
             instance = new ManasShaktiiAgent(context);
         }
         return instance;
+    }
+
+    public LocalModelRuntime getModelRuntime() {
+        return modelRuntime;
     }
 
     public void setModelRuntime(LocalModelRuntime runtime) {
@@ -63,12 +68,16 @@ public class ManasShaktiiAgent {
             modelRuntime.initialize(context, new LocalModelRuntime.InitializationCallback() {
                 @Override
                 public void onSuccess() {
-                    Log.d(TAG, "LocalModelRuntime initialized successfully.");
+                    Log.d(TAG, "LocalModelRuntime initialized: " + modelRuntime.getRuntimeName());
+                    ManasShaktiiModule.sendModelStatusToJs(modelRuntime.getRuntimeName(), modelRuntime.getRuntimeStatus());
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
-                    Log.w(TAG, "LocalModelRuntime initialization deferred/failed: " + throwable.getMessage());
+                    Log.w(TAG, "Primary runtime initialization error: " + throwable.getMessage() + ". Activating FallbackModelRuntime.");
+                    modelRuntime = new FallbackModelRuntime();
+                    modelRuntime.initialize(context, null);
+                    ManasShaktiiModule.sendModelStatusToJs(modelRuntime.getRuntimeName(), modelRuntime.getRuntimeStatus());
                 }
             });
         }
@@ -96,7 +105,7 @@ public class ManasShaktiiAgent {
 
     private void processEvent(BehavioralEvent event) {
         try {
-            Log.d(TAG, "Processing behavioral event: " + event.getEventType());
+            Log.d(TAG, "Processing behavioral event via " + (modelRuntime != null ? modelRuntime.getRuntimeName() : "No Runtime"));
             String prompt = PromptBuilder.buildInterventionPrompt(event);
 
             String rawOutput = null;
@@ -104,7 +113,7 @@ public class ManasShaktiiAgent {
                 try {
                     rawOutput = modelRuntime.generate(prompt);
                 } catch (Exception e) {
-                    Log.e(TAG, "Local runtime model inference error, using fallback prompt", e);
+                    Log.e(TAG, "Local model inference error, using fallback prompt", e);
                 }
             }
 

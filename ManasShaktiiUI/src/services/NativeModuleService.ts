@@ -43,4 +43,9 @@ export const NativeModuleService = {
     if (!eventEmitter) return { remove: () => {} };
     return eventEmitter.addListener('onInterventionTriggered', callback);
   },
+
+  subscribeModelStatus(callback: (data: { runtimeName: string; status: string }) => void) {
+    if (!eventEmitter) return { remove: () => {} };
+    return eventEmitter.addListener('modelStatusChanged', callback);
+  },
 };

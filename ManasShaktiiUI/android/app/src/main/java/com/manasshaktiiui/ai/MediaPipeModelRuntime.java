@@ -10,7 +10,7 @@ import java.io.File;
 
 /**
  * Concrete LocalModelRuntime implementation powered by MediaPipe GenAI LlmInference.
- * Lazy-loads the model into memory only during inference and safely reclaims RAM when complete.
+ * All MediaPipe specific imports, configurations, options, and file paths are strictly isolated inside this class.
  */
 public class MediaPipeModelRuntime implements LocalModelRuntime {
 
@@ -25,6 +25,18 @@ public class MediaPipeModelRuntime implements LocalModelRuntime {
 
     public MediaPipeModelRuntime(String modelFilename) {
         this.modelFilename = modelFilename;
+    }
+
+    @Override
+    public String getRuntimeName() {
+        return "MediaPipe GenAI / Gemma INT4";
+    }
+
+    @Override
+    public String getRuntimeStatus() {
+        if (isReady()) return "Ready";
+        if (modelFile != null && !modelFile.exists()) return "Model file missing: " + modelFilename;
+        return "Uninitialized";
     }
 
     @Override
